@@ -35,8 +35,19 @@ function fetchWithNativeHttp(url, maxRedirects = 5) {
         }
         
         // Resolver la URL de redirección (puede ser relativa o absoluta)
-        const redirectUrl = new URL(res.headers.location, url).href;
-        fetchWithNativeHttp(redirectUrl, maxRedirects - 1).then(resolve).catch(reject);
+        let redirectUrl;
+        try {
+          // Si la location es una URL completa, usarla directamente
+          if (res.headers.location.startsWith('http://') || res.headers.location.startsWith('https://')) {
+            redirectUrl = res.headers.location;
+          } else {
+            // Si es relativa, construirla basándose en la URL original
+            redirectUrl = `${parsedUrl.protocol}//${parsedUrl.host}${res.headers.location}`;
+          }
+          fetchWithNativeHttp(redirectUrl, maxRedirects - 1).then(resolve).catch(reject);
+        } catch (err) {
+          reject(new Error(`Error al procesar redirect: ${err.message}`));
+        }
         return;
       }
       
