@@ -9,19 +9,36 @@ const speechKey = process.env.AZURE_SPEECH_KEY;
 const speechRegion = process.env.AZURE_SPEECH_REGION;
 
 app.http('read', {
-  methods: ['GET'],
+  methods: ['POST', 'OPTIONS'],
   authLevel: 'anonymous',
   handler: async (request, context) => {
-    const url = request.query.get("url");
-    if (!url) {
-      return { 
-        status: 400, 
-        headers: { "Access-Control-Allow-Origin": "*" },
-        body: "Falta el parámetro ?url=" 
-    };
+    // Manejar preflight CORS request
+    if (request.method === 'OPTIONS') {
+      return {
+        status: 200,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type"
+        }
+      };
     }
 
     try {
+      const body = await request.json();
+      const url = body?.url;
+      
+      if (!url || typeof url !== 'string') {
+        return { 
+          status: 400, 
+          headers: { 
+            "Access-Control-Allow-Origin": "*",
+            "Content-Type": "application/json"
+          },
+          jsonBody: { error: "Se requiere una URL válida en el body" }
+        };
+      }
+
       const resp = await fetch(url);
       if (!resp.ok) throw new Error(`Error al descargar: ${resp.status}`);
       const html = await resp.text();
@@ -76,16 +93,22 @@ app.http('read', {
       const audioBuffer = Buffer.from(await ttsResp.arrayBuffer());
 
       return { 
-        status:200,
-        headers: { "Access-Control-Allow-Origin": "*" },
-        jsonBody: { summary, text: chunk, audio: audioBuffer.toString("base64") } 
-    };
+        status: 200,
+        headers: { 
+          "Access-Control-Allow-Origin": "*",
+          "Content-Type": "application/json"
+        },
+        jsonBody: { success: true, summary, text: chunk, audio: audioBuffer.toString("base64") } 
+      };
     } catch (err) {
       context.error("Error:", err.message);
       return { 
         status: 500, 
-        headers: { "Access-Control-Allow-Origin": "*" },
-        body: err.message 
+        headers: { 
+          "Access-Control-Allow-Origin": "*",
+          "Content-Type": "application/json"
+        },
+        jsonBody: { success: false, error: err.message } 
       };
     }
   }

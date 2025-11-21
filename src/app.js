@@ -10,9 +10,17 @@ document.getElementById("read").addEventListener("click", async () => {
   status.textContent = "Procesando con Azure AI...";
 
   try {
-    const baseUrl = window.location.origin;
+    const baseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+      ? 'http://localhost:7071' 
+      : window.location.origin;
     
-    const resp = await fetch(`${baseUrl}/api/read?url=${encodeURIComponent(url)}`);
+    const resp = await fetch(`${baseUrl}/api/read`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ url: url })
+    });
     if (!resp.ok) throw new Error("Error en la función");
     
     const data = await resp.json();
