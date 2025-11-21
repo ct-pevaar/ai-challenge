@@ -42,7 +42,7 @@ app.http('read', {
           },
           body: JSON.stringify({
             messages: [
-              { role: "system", content: "Eres un asistente experto en generar resúmenes claros y completos del contenido visible de una página web." },
+              { role: "system", content: "Eres un asistente experto en generar resúmenes claros y completos del contenido visible de una página web. no usas markdown" },
               { role: "user", content: `Por favor, haz un resumen comprensivo de este contenido:\n\n${chunk}` }
             ],
             max_tokens: 800,
@@ -65,7 +65,7 @@ app.http('read', {
           },
           body: `
             <speak version="1.0" xml:lang="es-ES">
-              <voice xml:lang="es-ES" xml:gender="Female" name="es-ES-ElviraNeural">
+              <voice xml:lang="es-MX" xml:gender="Male" name="es-MX-GerardoNeural">
                 ${summary}
               </voice>
             </speak>`

@@ -20,8 +20,14 @@ document.getElementById("read").addEventListener("click", async () => {
       <p>${data.summary}</p>
       <h3>Texto visible (recortado por límite de tokens)</h3>
       <p>${data.text.slice(0, 1000)}...</p>
-      <audio controls src="${audioSrc}"></audio>
+      <audio controls src="${audioSrc}" id="audioPlayer"></audio>
     `;
+    
+    const audioPlayer = document.getElementById("audioPlayer");
+    audioPlayer.play().catch(err => {
+      console.log("No se pudo reproducir automáticamente:", err);
+    });
+    
     console.log(data);
   } catch (err) {
     console.error(err);
