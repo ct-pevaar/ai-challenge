@@ -10,7 +10,9 @@ document.getElementById("read").addEventListener("click", async () => {
   status.textContent = "Procesando con Azure AI...";
 
   try {
-    const resp = await fetch(`http://localhost:7071/api/read?url=${encodeURIComponent(url)}`);
+    const baseUrl = window.location.origin;
+    
+    const resp = await fetch(`${baseUrl}/api/read?url=${encodeURIComponent(url)}`);
     if (!resp.ok) throw new Error("Error en la función");
     
     const data = await resp.json();
