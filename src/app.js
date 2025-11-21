@@ -14,6 +14,10 @@ document.getElementById("read").addEventListener("click", async () => {
       ? 'http://localhost:7071' 
       : window.location.origin;
     
+    console.log('Enviando URL:', url);
+    console.log('A endpoint:', `${baseUrl}/api/read`);
+    console.log('Body:', JSON.stringify({ url: url }));
+    
     const resp = await fetch(`${baseUrl}/api/read`, {
       method: 'POST',
       headers: {

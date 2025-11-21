@@ -1,12 +1,51 @@
 import { app } from '@azure/functions';
 import fetch from "node-fetch";
 import * as cheerio from "cheerio";
+import https from 'https';
+import http from 'http';
 
 const endpoint = process.env.AZURE_OPENAI_ENDPOINT;
 const apiKey = process.env.AZURE_OPENAI_KEY;
 const deployment = process.env.AZURE_OPENAI_DEPLOYMENT;
 const speechKey = process.env.AZURE_SPEECH_KEY;
 const speechRegion = process.env.AZURE_SPEECH_REGION;
+
+// Función helper para hacer fetch con https nativo
+function fetchWithNativeHttp(url) {
+  return new Promise((resolve, reject) => {
+    const parsedUrl = new URL(url);
+    const protocol = parsedUrl.protocol === 'https:' ? https : http;
+    
+    const options = {
+      hostname: parsedUrl.hostname,
+      port: parsedUrl.port,
+      path: parsedUrl.pathname + parsedUrl.search,
+      method: 'GET',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    };
+    
+    const req = protocol.request(options, (res) => {
+      let data = '';
+      res.on('data', (chunk) => data += chunk);
+      res.on('end', () => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          resolve({ ok: true, status: res.statusCode, text: () => Promise.resolve(data) });
+        } else {
+          reject(new Error(`HTTP ${res.statusCode}`));
+        }
+      });
+    });
+    
+    req.on('error', reject);
+    req.setTimeout(15000, () => {
+      req.destroy();
+      reject(new Error('Timeout'));
+    });
+    req.end();
+  });
+}
 
 app.http('read', {
   methods: ['POST', 'OPTIONS'],
@@ -72,19 +111,14 @@ app.http('read', {
         };
       }
 
-      context.log('Intentando fetch...');
+      context.log('Intentando fetch con https nativo...');
       let resp;
       try {
-        resp = await fetch(url, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-          }
-        });
+        resp = await fetchWithNativeHttp(parsedUrl.href);
         context.log('Fetch exitoso, status:', resp.status);
       } catch (fetchError) {
         context.error('Error en fetch:', fetchError.message);
-        context.error('Error stack:', fetchError.stack);
-        throw new Error(`Error al conectar con ${url}: ${fetchError.message}`);
+        throw new Error(`Error al conectar: ${fetchError.message}`);
       }
       
       if (!resp.ok) throw new Error(`Error al descargar: ${resp.status}`);
