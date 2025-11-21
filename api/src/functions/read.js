@@ -50,27 +50,43 @@ app.http('read', {
       }
       
       context.log('URL procesada:', url);
+      context.log('Longitud URL:', url.length);
+      context.log('Primeros 100 caracteres:', url.substring(0, 100));
       
       // Validar que la URL sea válida
+      let parsedUrl;
       try {
-        new URL(url);
+        parsedUrl = new URL(url);
+        context.log('URL parseada exitosamente');
+        context.log('Protocol:', parsedUrl.protocol);
+        context.log('Host:', parsedUrl.host);
       } catch (urlError) {
-        context.error('URL inválida:', url, urlError.message);
+        context.error('Error al parsear URL:', urlError.message);
         return { 
           status: 400, 
           headers: { 
             "Access-Control-Allow-Origin": "*",
             "Content-Type": "application/json"
           },
-          jsonBody: { error: `URL inválida: ${url}` }
+          jsonBody: { error: `URL inválida: ${urlError.message}` }
         };
       }
 
-      const resp = await fetch(url, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
-      });
+      context.log('Intentando fetch...');
+      let resp;
+      try {
+        resp = await fetch(url, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+          }
+        });
+        context.log('Fetch exitoso, status:', resp.status);
+      } catch (fetchError) {
+        context.error('Error en fetch:', fetchError.message);
+        context.error('Error stack:', fetchError.stack);
+        throw new Error(`Error al conectar con ${url}: ${fetchError.message}`);
+      }
+      
       if (!resp.ok) throw new Error(`Error al descargar: ${resp.status}`);
       const html = await resp.text();
 

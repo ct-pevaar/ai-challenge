@@ -21,9 +21,13 @@ document.getElementById("read").addEventListener("click", async () => {
       },
       body: JSON.stringify({ url: url })
     });
-    if (!resp.ok) throw new Error("Error en la función");
     
     const data = await resp.json();
+    console.log('Respuesta completa:', data);
+    
+    if (!resp.ok || !data.success) {
+      throw new Error(data.error || "Error en la función");
+    }
     const audioSrc = `data:audio/mp3;base64,${data.audio}`;
     status.innerHTML = `
       <h2>Resumen completo</h2>
