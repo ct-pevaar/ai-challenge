@@ -11,7 +11,7 @@ const speechKey = process.env.AZURE_SPEECH_KEY;
 const speechRegion = process.env.AZURE_SPEECH_REGION;
 
 // Función helper para hacer fetch con https nativo
-function fetchWithNativeHttp(url) {
+function fetchWithNativeHttp(url, maxRedirects = 5) {
   return new Promise((resolve, reject) => {
     const parsedUrl = new URL(url);
     const protocol = parsedUrl.protocol === 'https:' ? https : http;
@@ -27,6 +27,19 @@ function fetchWithNativeHttp(url) {
     };
     
     const req = protocol.request(options, (res) => {
+      // Manejar redirects
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        if (maxRedirects === 0) {
+          reject(new Error('Demasiados redirects'));
+          return;
+        }
+        
+        // Resolver la URL de redirección (puede ser relativa o absoluta)
+        const redirectUrl = new URL(res.headers.location, url).href;
+        fetchWithNativeHttp(redirectUrl, maxRedirects - 1).then(resolve).catch(reject);
+        return;
+      }
+      
       let data = '';
       res.on('data', (chunk) => data += chunk);
       res.on('end', () => {
