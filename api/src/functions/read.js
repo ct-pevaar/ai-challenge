@@ -26,7 +26,9 @@ app.http('read', {
 
     try {
       const body = await request.json();
-      const url = body?.url;
+      let url = body?.url;
+      
+      context.log('URL recibida:', url);
       
       if (!url || typeof url !== 'string') {
         return { 
@@ -39,7 +41,36 @@ app.http('read', {
         };
       }
 
-      const resp = await fetch(url);
+      // Limpiar la URL
+      url = url.trim();
+      
+      // Asegurar que la URL tenga protocolo
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'https://' + url;
+      }
+      
+      context.log('URL procesada:', url);
+      
+      // Validar que la URL sea válida
+      try {
+        new URL(url);
+      } catch (urlError) {
+        context.error('URL inválida:', url, urlError.message);
+        return { 
+          status: 400, 
+          headers: { 
+            "Access-Control-Allow-Origin": "*",
+            "Content-Type": "application/json"
+          },
+          jsonBody: { error: `URL inválida: ${url}` }
+        };
+      }
+
+      const resp = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+      });
       if (!resp.ok) throw new Error(`Error al descargar: ${resp.status}`);
       const html = await resp.text();
 
@@ -101,7 +132,7 @@ app.http('read', {
         jsonBody: { success: true, summary, text: chunk, audio: audioBuffer.toString("base64") } 
       };
     } catch (err) {
-      context.error("Error:", err.message);
+      context.error("Error completo:", err);
       return { 
         status: 500, 
         headers: { 
